@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>XLSForm Online</title>
+	<!-- Bootstrap CSS Toolkit styles -->
+	<link rel="stylesheet" href="/static/css/bootstrap.min.css">
+	<style type="text/css">
+	.keepformatting {
+		white-space: pre-wrap;
+		white-space: -moz-pre-wrap;
+	}
+	</style>
+	
+	<script src="/static/js/jquery.min.js"></script>
+	<script type="text/javascript">
+$(document).ready(function() {
+	$('#myForm').submit(function() {
+		$('#submitBtn').replaceWith('<div class="progress progress-striped active"><div class="bar" style="width: 100%;"></div></div>');
+	});
+});
+	</script>
+</head>
+<body>
+
+{% block upload %}
+<form enctype="multipart/form-data" method="post" class="well" id="myForm">
+   <table>
+       {{form.as_table}}
+    </table>
+   {% csrf_token %}
+    <input type="submit" value="Submit" id="submitBtn" class="btn" />
+</form>
+{% endblock %}
+
+{% if result %}
+	{% if error %}
+	<div class="alert alert-error keepformatting">{{ error }}</div>
+	{% else %}
+		{% if success %}
+		<div class="alert alert-success">
+			<a href="{{ xml_path }}" class="btn btn-success">Download XForm</a>
+			{% if itemsets_url %}
+			<a href="{{ itemsets_url }}" class="btn btn-success">Download external choices CSV</a>
+			{% endif %}
+			<a href="http://odk.enke.to/preview?form={{ xml_url }}" target="_blank" class="btn btn-success">Preview in Enketo</a>
+		</div>
+		{% endif %}
+	{% endif %}
+	
+	{% for warning in warnings %}
+	    <div class="alert keepformatting">{{ warning }}</div>
+	{% endfor %}
+{% endif %}
+
+<div id="output">
+</div>
+</body>
+</html> 
