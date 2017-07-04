@@ -12,7 +12,7 @@ import pyxform
 from pyxform import xls2json
 from pyxform.utils import sheet_to_csv
 
-SERVER_TMP_DIR = '/tmp/xlsform'
+DJANGO_TMP_HOME = os.environ['DJANGO_TMP_HOME']
 
 class UploadFileForm(forms.Form):
     file = forms.FileField()
@@ -31,11 +31,11 @@ def json_workbook(request):
     error = None
     warningsList = []
 
-    if not (os.access(SERVER_TMP_DIR, os.F_OK)):
-        os.mkdir(SERVER_TMP_DIR)
+    if not (os.access(DJANGO_TMP_HOME, os.F_OK)):
+        os.mkdir(DJANGO_TMP_HOME)
 
     #Make a randomly generated directory to prevent name collisions
-    temp_dir = tempfile.mkdtemp(dir=SERVER_TMP_DIR)
+    temp_dir = tempfile.mkdtemp(dir=DJANGO_TMP_HOME)
     form_name = request.POST.get('name', 'form')
     output_filename = form_name + '.xml'
     out_path = os.path.join(temp_dir, output_filename)
@@ -83,15 +83,15 @@ def index(request):
 
             filename, ext = os.path.splitext(request.FILES['file'].name)
 
-            if not (os.access(SERVER_TMP_DIR, os.F_OK)):
-                os.mkdir(SERVER_TMP_DIR)
+            if not (os.access(DJANGO_TMP_HOME, os.F_OK)):
+                os.mkdir(DJANGO_TMP_HOME)
 
             #Make a randomly generated directory to prevent name collisions
-            temp_dir = tempfile.mkdtemp(dir=SERVER_TMP_DIR)
+            temp_dir = tempfile.mkdtemp(dir=DJANGO_TMP_HOME)
             xml_path = os.path.join(temp_dir, filename + '.xml')
             itemsets_url = None
 
-            relpath = os.path.relpath(xml_path, SERVER_TMP_DIR)
+            relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
 
             #Init the output xml file.
             fo = open(xml_path, "wb+")
@@ -109,7 +109,7 @@ def index(request):
                     # Create a csv for the external choices
                     itemsets_csv = os.path.join(os.path.split(xls_path)[0],
                                                 "itemsets.csv")
-                    relpath_itemsets_csv = os.path.relpath(itemsets_csv, SERVER_TMP_DIR)
+                    relpath_itemsets_csv = os.path.relpath(itemsets_csv, DJANGO_TMP_HOME)
                     choices_exported = sheet_to_csv(xls_path, itemsets_csv,
                                                     "external_choices")
                     if not choices_exported:
@@ -139,7 +139,7 @@ def index(request):
 
 
 def serve_file(request, path):
-    fo = codecs.open(os.path.join(SERVER_TMP_DIR, path), mode='r', encoding='utf-8')
+    fo = codecs.open(os.path.join(DJANGO_TMP_HOME, path), mode='r', encoding='utf-8')
     data = fo.read()
     fo.close()
     response = HttpResponse(content_type='application/octet-stream')
