@@ -87,7 +87,7 @@ def index(request):
                 os.mkdir(DJANGO_TMP_HOME)
 
             #Make a randomly generated directory to prevent name collisions
-            temp_dir = tempfile.mkdtemp(dir=DJANGO_TMP_HOME)
+            temp_dir = tempfile.mkdtemp(prefix=None, dir=DJANGO_TMP_HOME)
             xml_path = os.path.join(temp_dir, filename + '.xml')
             itemsets_url = None
 
