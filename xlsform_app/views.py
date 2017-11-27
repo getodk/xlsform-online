@@ -1,5 +1,6 @@
 # Create your views here.
 from django.http import HttpResponse
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.shortcuts import render_to_response, render
 from django import forms
 
@@ -72,7 +73,7 @@ def has_external_choices(json_struct):
                 return True
     return False
 
-
+@xframe_options_exempt
 def index(request):
     if request.method == 'POST':  # If the form has been submitted...
         form = UploadFileForm(request.POST, request.FILES)  # A form bound to the POST data
