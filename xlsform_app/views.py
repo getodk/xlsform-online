@@ -121,7 +121,7 @@ def index(request):
             except Exception as e:
                 error = 'Error: ' + str(e)
 
-            return render_to_response('upload.html', {
+            return render(request, 'upload.html', {
                 'form': UploadFileForm(),
                 'xml_path': request.build_absolute_uri('./downloads/' + relpath),
                 'xml_url': request.build_absolute_uri('./downloads/' + relpath),
