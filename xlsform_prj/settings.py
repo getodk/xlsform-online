@@ -89,19 +89,25 @@ DATABASES = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+    },
     'handlers': {
         'file': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'debug.log',
             'when': 'midnight',
-            'backupCount': '31',
-            'filename': os.path.join(BASE_DIR, 'logs/xlsform.log'),
+            'backupCount': 31,
+            'formatter':'standard',
         },
     },
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
     },
