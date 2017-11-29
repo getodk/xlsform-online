@@ -95,7 +95,7 @@ LOGGING = {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'when': 'midnight',
             'backupCount': '31',
-            'filename': 'logs/debug.log',
+            'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
         },
     },
     'loggers': {
