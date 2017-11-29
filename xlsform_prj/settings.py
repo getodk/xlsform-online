@@ -85,7 +85,8 @@ DATABASES = {
 
 # Logging 
 # https://docs.djangoproject.com/en/1.11/topics/logging/#examples
-    
+# Don't log missing context variables in django.template
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -109,6 +110,11 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
+        },
+        'django.template': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
     },
 }
