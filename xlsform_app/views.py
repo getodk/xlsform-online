@@ -46,7 +46,7 @@ def json_workbook(request):
         json_survey = xls2json.workbook_to_json(json.loads(request.POST['workbookJson']), form_name=form_name,
                                                 warnings=warningsList)
         survey = pyxform.create_survey_element_from_dict(json_survey)
-        survey.print_xform_to_file(out_path, warnings=warningsList)
+        survey.print_xform_to_file(out_path, warnings=warningsList, pretty_print=False)
     except Exception as e:
         error = str(e)
     return HttpResponse(json.dumps({
@@ -104,7 +104,7 @@ def index(request):
                 warnings = []
                 json_survey = xls2json.parse_file_to_json(xls_path, warnings=warnings)
                 survey = pyxform.create_survey_element_from_dict(json_survey)
-                survey.print_xform_to_file(xml_path, warnings=warnings)
+                survey.print_xform_to_file(xml_path, warnings=warnings, pretty_print=False)
 
                 if has_external_choices(json_survey):
                     # Create a csv for the external choices
