@@ -139,11 +139,12 @@ def index(request):
     })
 
 
+@xframe_options_exempt
 def serve_file(request, path):
     fo = codecs.open(os.path.join(DJANGO_TMP_HOME, path), mode='r', encoding='utf-8')
     data = fo.read()
     fo.close()
-    response = HttpResponse(content_type='application/octet-stream')
-    #response['Content-Disposition'] = 'attachment; filename=somefilename.xml'
+    response = HttpResponse(content_type='application/xml')
+    response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(os.path.normpath(path))
     response.write(data)
     return response
