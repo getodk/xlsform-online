@@ -10,6 +10,9 @@
 		white-space: pre-wrap;
 		white-space: -moz-pre-wrap;
 	}
+	.version {
+		text-align: center;
+	}
 	</style>
 	
 	<script src="/static/js/jquery.min.js"></script>
@@ -24,12 +27,12 @@ $(document).ready(function() {
 <body>
 
 {% block upload %}
-<form enctype="multipart/form-data" method="post" class="well" id="myForm">
+<form enctype="multipart/form-data" method="post" class="alert alert-info" id="myForm">
    <table>
        {{form.as_table}}
     </table>
    {% csrf_token %}
-    <input type="submit" value="Submit" id="submitBtn" class="btn" />
+    <input type="submit" value="Submit" id="submitBtn" class="btn btn-info" />
 </form>
 {% endblock %}
 
@@ -55,5 +58,6 @@ $(document).ready(function() {
 
 <div id="output">
 </div>
+<div class="version muted">v1.2.0</div>
 </body>
 </html> 
