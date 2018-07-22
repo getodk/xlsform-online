@@ -113,7 +113,7 @@ LOGGING = {
         },
         'django.template': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
     },
