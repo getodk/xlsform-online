@@ -11,7 +11,7 @@ import codecs
 
 import pyxform
 from pyxform import xls2json
-from pyxform.utils import sheet_to_csv
+from pyxform.utils import sheet_to_csv, has_external_choices
 
 DJANGO_TMP_HOME = os.environ['DJANGO_TMP_HOME']
 
@@ -55,23 +55,6 @@ def json_workbook(request):
                                        'error': error,
                                        'warnings': warningsList,
                                    }, indent=4), mimetype="application/json")
-
-
-def has_external_choices(json_struct):
-    """
-    Returns true if a select one external prompt is used in the survey.
-    """
-    if isinstance(json_struct, dict):
-        for k, v in json_struct.items():
-            if k == u"type" and v.startswith(u"select one external"):
-                return True
-            elif has_external_choices(v):
-                return True
-    elif isinstance(json_struct, list):
-        for v in json_struct:
-            if has_external_choices(v):
-                return True
-    return False
 
 @xframe_options_exempt
 def index(request):
