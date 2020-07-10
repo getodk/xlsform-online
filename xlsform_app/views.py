@@ -1,7 +1,7 @@
 # Create your views here.
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
-from django.shortcuts import render_to_response, render
+from django.shortcuts import render
 from django import forms
 
 import tempfile
