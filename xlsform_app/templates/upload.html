@@ -55,7 +55,7 @@ $(document).ready(function() {
 			{% if itemsets_url %}
 			<a href="{{ itemsets_url }}" class="btn btn-success">Download external choices CSV</a>
 			{% endif %}
-			<a href="http://odk.enke.to/preview?form={{ xml_url }}" target="_blank" class="btn btn-success">Preview in Enketo</a>
+			<a href="https://enketo.getodk.org/preview?form={{ xml_url }}" target="_blank" class="btn btn-success">Preview in browser</a>
 		</div>
 		{% endif %}
 	{% endif %}
@@ -67,6 +67,6 @@ $(document).ready(function() {
 
 <div id="output">
 </div>
-<div class="version muted"><a target="_parent" href="https://github.com/getodk/xlsform-online/releases/tag/v2.1.0">v2.1.0</a></div>
+<div class="version muted"><a target="_parent" href="https://github.com/getodk/xlsform-online/releases/tag/v1.6.2">v1.6.2</a></div>
 </body>
 </html>
