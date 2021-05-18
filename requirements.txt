@@ -1,2 +1,2 @@
 Django==3.2
-pyxform==1.5.0
+pyxform==1.5.1
