@@ -1,2 +1,2 @@
-Django==3.2
-pyxform==1.5.1
+Django==3.2.4
+pyxform==1.6.0
