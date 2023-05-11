@@ -19,8 +19,12 @@ class UploadFileForm(forms.Form):
     file = forms.FileField()
 
 
-def handle_uploaded_file(f, temp_dir):
-    xls_path = os.path.join(temp_dir, f.name)
+def handle_uploaded_file(f, temp_dir): 
+    
+    # filename will be used in a URL and # isn't a valid character
+    filename = f.name.replace("#","")
+
+    xls_path = os.path.join(temp_dir, filename)
     destination = open(xls_path, 'wb+')
     for chunk in f.chunks():
         destination.write(chunk)
@@ -66,6 +70,9 @@ def index(request):
             warnings = None
 
             filename, ext = os.path.splitext(request.FILES['file'].name)
+
+            # filename will be used in a URL and # isn't a valid character
+            filename = filename.replace("#","")
 
             if not (os.access(DJANGO_TMP_HOME, os.F_OK)):
                 os.mkdir(DJANGO_TMP_HOME)
