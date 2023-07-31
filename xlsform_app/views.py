@@ -8,6 +8,7 @@ import tempfile
 import os
 import json
 import codecs
+import re
 
 import pyxform
 from pyxform import xls2json
@@ -19,10 +20,15 @@ class UploadFileForm(forms.Form):
     file = forms.FileField()
 
 
+def clean_name(name):
+
+    # name will be used in a URL and # and , aren't valid characters
+    return re.sub("#|,","", name)
+
+
 def handle_uploaded_file(f, temp_dir): 
     
-    # filename will be used in a URL and # isn't a valid character
-    filename = f.name.replace("#","")
+    filename = clean_name(f.name)
 
     xls_path = os.path.join(temp_dir, filename)
     destination = open(xls_path, 'wb+')
@@ -71,8 +77,7 @@ def index(request):
 
             filename, ext = os.path.splitext(request.FILES['file'].name)
 
-            # filename will be used in a URL and # isn't a valid character
-            filename = filename.replace("#","")
+            filename = clean_name(filename)
 
             if not (os.access(DJANGO_TMP_HOME, os.F_OK)):
                 os.mkdir(DJANGO_TMP_HOME)
@@ -131,10 +136,13 @@ def index(request):
 
 @xframe_options_exempt
 def serve_file(request, path):
-    fo = codecs.open(os.path.join(DJANGO_TMP_HOME, path), mode='r', encoding='utf-8')
-    data = fo.read()
-    fo.close()
-    response = HttpResponse(content_type='application/xml')
-    response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(os.path.normpath(path))
-    response.write(data)
-    return response
+    path = path.strip("/")
+    path_segments = os.path.split(path)
+    if len(path_segments) == 2 and all(segment not in (".", "..", "") for segment in path_segments):
+        fo = codecs.open(os.path.join(DJANGO_TMP_HOME, path), mode='r', encoding='utf-8')
+        data = fo.read()
+        fo.close()
+        response = HttpResponse(content_type='application/xml')
+        response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(os.path.normpath(path))
+        response.write(data)
+        return response
