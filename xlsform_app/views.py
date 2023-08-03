@@ -18,7 +18,7 @@ from pyxform.utils import sheet_to_csv, has_external_choices
 DJANGO_TMP_HOME = os.environ['DJANGO_TMP_HOME']
 
 class UploadFileForm(forms.Form):
-    file = forms.FileField()
+    file = forms.FileField(attrs={ 'accept': '.xls, .xlsx' })
 
 
 def clean_name(name):
