@@ -10,6 +10,7 @@ import json
 import codecs
 import re
 import urllib.parse
+import uuid
 
 import pyxform
 from pyxform import xls2json
@@ -47,7 +48,7 @@ def json_workbook(request):
         os.mkdir(DJANGO_TMP_HOME)
 
     #Make a randomly generated directory to prevent name collisions
-    temp_dir = tempfile.mkdtemp(prefix='', dir=DJANGO_TMP_HOME)
+    temp_dir = tempfile.mkdtemp(prefix=uuid.uuid4().hex, dir=DJANGO_TMP_HOME)
     form_name = request.POST.get('name', 'form')
     output_filename = form_name + '.xml'
     out_path = os.path.join(temp_dir, output_filename)
