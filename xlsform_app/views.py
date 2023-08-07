@@ -9,7 +9,6 @@ import os
 import json
 import codecs
 import re
-import urllib.parse
 import uuid
 
 import pyxform
@@ -138,7 +137,7 @@ def index(request):
 
 @xframe_options_exempt
 def serve_file(request, path):
-    path = urllib.parse.unquote(path).strip("/")
+    path = path.strip("/")
     path_segments = path.split("/")
     if len(path_segments) == 2 and all(segment not in (".", "..", "") for segment in path_segments):
         fo = codecs.open(os.path.join(DJANGO_TMP_HOME, path), mode='r', encoding='utf-8')
