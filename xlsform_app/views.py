@@ -39,34 +39,6 @@ def handle_uploaded_file(f, temp_dir):
     return xls_path
 
 
-def json_workbook(request):
-    error = None
-    warningsList = []
-
-    if not (os.access(DJANGO_TMP_HOME, os.F_OK)):
-        os.mkdir(DJANGO_TMP_HOME)
-
-    #Make a randomly generated directory to prevent name collisions
-    temp_dir = tempfile.mkdtemp(prefix=uuid.uuid4().hex, dir=DJANGO_TMP_HOME)
-    form_name = request.POST.get('name', 'form')
-    output_filename = form_name + '.xml'
-    out_path = os.path.join(temp_dir, output_filename)
-    if os.access(out_path, os.F_OK):
-        os.remove(out_path)
-    try:
-        json_survey = xls2json.workbook_to_json(json.loads(request.POST['workbookJson']), form_name=form_name,
-                                                warnings=warningsList)
-        survey = pyxform.create_survey_element_from_dict(json_survey)
-        survey.print_xform_to_file(out_path, warnings=warningsList, pretty_print=False)
-    except Exception as e:
-        error = str(e)
-    return HttpResponse(json.dumps({
-                                       'dir': os.path.split(temp_dir)[-1],
-                                       'name': output_filename,
-                                       'error': error,
-                                       'warnings': warningsList,
-                                   }, indent=4), mimetype="application/json")
-
 @xframe_options_exempt
 def index(request):
     if request.method == 'POST':  # If the form has been submitted...
