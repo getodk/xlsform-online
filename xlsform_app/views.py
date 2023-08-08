@@ -9,7 +9,7 @@ import os
 import json
 import codecs
 import re
-import urllib.parse
+import uuid
 
 import pyxform
 from pyxform import xls2json
@@ -56,7 +56,7 @@ def index(request):
                 os.mkdir(DJANGO_TMP_HOME)
 
             #Make a randomly generated directory to prevent name collisions
-            temp_dir = tempfile.mkdtemp(prefix='', dir=DJANGO_TMP_HOME)
+            temp_dir = tempfile.mkdtemp(prefix=uuid.uuid4().hex, dir=DJANGO_TMP_HOME)
             xml_path = os.path.join(temp_dir, filename + '.xml')
             itemsets_url = None
 
@@ -109,7 +109,7 @@ def index(request):
 
 @xframe_options_exempt
 def serve_file(request, path):
-    path = urllib.parse.unquote(path).strip("/")
+    path = path.strip("/")
     path_segments = path.split("/")
     if len(path_segments) == 2 and all(segment not in (".", "..", "") for segment in path_segments):
         fo = codecs.open(os.path.join(DJANGO_TMP_HOME, path), mode='r', encoding='utf-8')
