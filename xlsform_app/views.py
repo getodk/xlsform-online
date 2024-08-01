@@ -19,7 +19,7 @@ from pyxform.xls2json_backends import sheet_to_csv
 DJANGO_TMP_HOME = os.environ['DJANGO_TMP_HOME']
 
 class UploadFileForm(forms.Form):
-    file = forms.FileField()
+    file = forms.FileField(attrs={ 'accept': '.xls, .xlsx' })
 
 
 def clean_name(name):
