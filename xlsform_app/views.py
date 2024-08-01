@@ -13,7 +13,8 @@ import uuid
 
 import pyxform
 from pyxform import xls2json
-from pyxform.utils import sheet_to_csv, has_external_choices
+from pyxform.utils import has_external_choices
+from pyxform.xls2json_backends import sheet_to_csv
 
 DJANGO_TMP_HOME = os.environ['DJANGO_TMP_HOME']
 
