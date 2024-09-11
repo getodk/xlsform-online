@@ -18,4 +18,4 @@ ENV DJANGO_TMP_HOME="/tmp_home"
 
 ENV DJANGO_PERSISTENT_HOME="/persistent_home"
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "xlsform_prj.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "5", "--timeout", "600", "--max-requests", "25", "--max-requests-jitter", "5", "xlsform_prj.wsgi:application"]
