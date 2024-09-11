@@ -1,8 +1,14 @@
 # Create your views here.
 from django.http import HttpResponse
+from django.http import JsonResponse
+from django.http import HttpResponseBadRequest
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from django import forms
+from django.conf import settings
+from enum import Enum
+import shutil
 
 import tempfile
 import os
@@ -15,18 +21,29 @@ import pyxform
 from pyxform import xls2json
 from pyxform.utils import has_external_choices
 from pyxform.xls2json_backends import sheet_to_csv
+from pyxform.validators import odk_validate
 
 DJANGO_TMP_HOME = os.environ['DJANGO_TMP_HOME']
+DJANGO_PERSISTENT_HOME = os.environ['DJANGO_PERSISTENT_HOME']
 
 class UploadFileForm(forms.Form):
     file = forms.FileField()
 
+class Persistence(Enum):
+    NONE = 'none'
+    ODK_ONLY = 'odk-only'
+    PUBLIC_ANONYMOUS = 'public-anonymous'
+    PUBLIC = 'public'
 
 def clean_name(name):
 
     # name will be used in a URL and # and , aren't valid characters
     return re.sub("#|,","", name)
 
+def append_cors_headers(response):
+    allowed_origin = settings.CORS_ALLOWED_ORIGIN
+    response["Access-Control-Allow-Origin"] = allowed_origin
+    response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
 
 def handle_uploaded_file(f, temp_dir): 
     
@@ -39,6 +56,75 @@ def handle_uploaded_file(f, temp_dir):
     destination.close()
     return xls_path
 
+def persist_file(persistence, dir_uuid, file_path):
+    persistence_dir = os.path.join(DJANGO_PERSISTENT_HOME, persistence.value, dir_uuid)
+    if not (os.access(persistence_dir, os.F_OK)):
+        os.makedirs(persistence_dir)
+    shutil.copy(file_path, persistence_dir)
+
+
+def convert_xlsform(file, persistence=Persistence.NONE):
+    error = None
+    warnings = None
+
+    filename, ext = os.path.splitext(file.name)
+
+    filename = clean_name(filename)
+
+    if not (os.access(DJANGO_TMP_HOME, os.F_OK)):
+        os.mkdir(DJANGO_TMP_HOME)
+
+    #Make a randomly generated directory to prevent name collisions
+    dir_uuid = uuid.uuid4().hex
+    temp_dir = tempfile.mkdtemp(prefix=dir_uuid, dir=DJANGO_TMP_HOME)
+    xml_path = os.path.join(temp_dir, filename + '.xml')
+    relpath_itemsets_csv = None
+
+    relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
+
+    #Init the output xml file.
+    fo = open(xml_path, "wb+")
+    fo.close()
+
+    try:
+        if ext == '.xml':
+            xml_path = handle_uploaded_file(file, temp_dir)
+            if(persistence != Persistence.NONE):
+                persist_file(persistence, dir_uuid, xml_path)
+            relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
+            warnings = odk_validate.check_xform(xml_path)
+        else:
+            #TODO: use the file object directly
+            xls_path = handle_uploaded_file(file, temp_dir)
+    
+            if(persistence != Persistence.NONE):
+                persist_file(persistence, dir_uuid, xls_path)
+
+            warnings = []
+            json_survey = xls2json.parse_file_to_json(xls_path, warnings=warnings)
+            survey = pyxform.create_survey_element_from_dict(json_survey)
+            survey.print_xform_to_file(xml_path, warnings=warnings, pretty_print=False)
+
+            if has_external_choices(json_survey):
+                # Create a csv for the external choices
+                itemsets_csv = os.path.join(os.path.split(xls_path)[0],
+                                            "itemsets.csv")
+                choices_exported = sheet_to_csv(xls_path, itemsets_csv,
+                                                "external_choices")
+                if not choices_exported:
+                    warnings += ["Could not export itemsets.csv, "
+                                    "perhaps the external choices sheet is missing."]
+                else:
+                    relpath_itemsets_csv = os.path.relpath(itemsets_csv, DJANGO_TMP_HOME)
+    except Exception as e:
+        error = 'Error: ' + str(e)
+
+    return { 
+        'xform_relpath': relpath,
+        'itemsets_relpath': relpath_itemsets_csv, 
+        'error': error,
+        'warnings': warnings
+    }
 
 @xframe_options_exempt
 def index(request):
@@ -46,58 +132,22 @@ def index(request):
         form = UploadFileForm(request.POST, request.FILES)  # A form bound to the POST data
         if form.is_valid():  # All validation rules pass
 
-            error = None
-            warnings = None
+            conversion_result = convert_xlsform(request.FILES['file'], Persistence.NONE)
+            
+            xform_relpath = conversion_result.get('xform_relpath')
+            xform_url = None if not xform_relpath else request.build_absolute_uri('../downloads/' + xform_relpath)
 
-            filename, ext = os.path.splitext(request.FILES['file'].name)
-
-            filename = clean_name(filename)
-
-            if not (os.access(DJANGO_TMP_HOME, os.F_OK)):
-                os.mkdir(DJANGO_TMP_HOME)
-
-            #Make a randomly generated directory to prevent name collisions
-            temp_dir = tempfile.mkdtemp(prefix=uuid.uuid4().hex, dir=DJANGO_TMP_HOME)
-            xml_path = os.path.join(temp_dir, filename + '.xml')
-            itemsets_url = None
-
-            relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
-
-            #Init the output xml file.
-            fo = open(xml_path, "wb+")
-            fo.close()
-
-            try:
-                #TODO: use the file object directly
-                xls_path = handle_uploaded_file(request.FILES['file'], temp_dir)
-                warnings = []
-                json_survey = xls2json.parse_file_to_json(xls_path, warnings=warnings)
-                survey = pyxform.create_survey_element_from_dict(json_survey)
-                survey.print_xform_to_file(xml_path, warnings=warnings, pretty_print=False)
-
-                if has_external_choices(json_survey):
-                    # Create a csv for the external choices
-                    itemsets_csv = os.path.join(os.path.split(xls_path)[0],
-                                                "itemsets.csv")
-                    relpath_itemsets_csv = os.path.relpath(itemsets_csv, DJANGO_TMP_HOME)
-                    choices_exported = sheet_to_csv(xls_path, itemsets_csv,
-                                                    "external_choices")
-                    if not choices_exported:
-                        warnings += ["Could not export itemsets.csv, "
-                                     "perhaps the external choices sheet is missing."]
-                    else:
-                        itemsets_url = request.build_absolute_uri('./downloads/' + relpath_itemsets_csv)
-            except Exception as e:
-                error = 'Error: ' + str(e)
+            itemsets_relpath = conversion_result.get('itemsets_relpath')
+            itemsets_url = None if not itemsets_relpath else request.build_absolute_uri('../downloads/' + itemsets_relpath)
 
             return render(request, 'upload.html', {
                 'form': UploadFileForm(),
-                'xml_path': request.build_absolute_uri('./downloads/' + relpath),
-                'xml_url': request.build_absolute_uri('./downloads/' + relpath),
+                'xml_path': xform_url,
+                'xml_url': xform_url,
                 'itemsets_url': itemsets_url,
-                'success': not error,
-                'error': error,
-                'warnings': warnings,
+                'success': not conversion_result.get('error'),
+                'error': conversion_result.get('error'),
+                'warnings': conversion_result.get('warnings'),
                 'result': True,
             })
     else:
@@ -106,7 +156,6 @@ def index(request):
     return render(request, 'upload.html', context={
         'form': form,
     })
-
 
 @xframe_options_exempt
 def serve_file(request, path):
@@ -119,4 +168,32 @@ def serve_file(request, path):
         response = HttpResponse(content_type='application/xml')
         response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(os.path.normpath(path))
         response.write(data)
+
+        append_cors_headers(response)
+
         return response
+
+@csrf_exempt
+def api_xlsform(request):
+    if request.method != 'POST':
+        return HttpResponseBadRequest()
+
+    persist_flag = request.POST.get('persist')
+    try:
+        persistence = Persistence(persist_flag)
+    except:
+        persistence = Persistence.NONE
+
+    conversion_result = convert_xlsform(request.FILES['file'], persistence)
+
+    xform_relpath = conversion_result.pop('xform_relpath')
+    conversion_result['xform_url'] = None if not xform_relpath else request.build_absolute_uri('../downloads/' + xform_relpath)
+
+    itemsets_relpath = conversion_result.pop('itemsets_relpath')
+    conversion_result['itemsets_url'] = None if not itemsets_relpath else request.build_absolute_uri('../downloads/' + itemsets_relpath)
+
+    response = JsonResponse(conversion_result)
+    
+    append_cors_headers(response)
+
+    return response
