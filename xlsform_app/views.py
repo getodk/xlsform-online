@@ -63,7 +63,7 @@ def persist_file(persistence, dir_uuid, file_path):
     shutil.copy(file_path, persistence_dir)
 
 
-def convert_xlsform(file, persistence=Persistence.NONE):
+def convert_xlsform(file, baseDownloadUrl, persistence=Persistence.NONE):
     error = None
     warnings = None
 
@@ -77,14 +77,7 @@ def convert_xlsform(file, persistence=Persistence.NONE):
     #Make a randomly generated directory to prevent name collisions
     dir_uuid = uuid.uuid4().hex
     temp_dir = tempfile.mkdtemp(prefix=dir_uuid, dir=DJANGO_TMP_HOME)
-    xml_path = os.path.join(temp_dir, filename + '.xml')
     relpath_itemsets_csv = None
-
-    relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
-
-    #Init the output xml file.
-    fo = open(xml_path, "wb+")
-    fo.close()
 
     try:
         if ext == '.xml':
@@ -94,6 +87,13 @@ def convert_xlsform(file, persistence=Persistence.NONE):
             relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
             warnings = odk_validate.check_xform(xml_path)
         else:
+            xml_path = os.path.join(temp_dir, filename + '.xml')
+            relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
+
+            #Init the output xml file.
+            fo = open(xml_path, "wb+")
+            fo.close()
+
             #TODO: use the file object directly
             xls_path = handle_uploaded_file(file, temp_dir)
     
@@ -120,8 +120,8 @@ def convert_xlsform(file, persistence=Persistence.NONE):
         error = 'Error: ' + str(e)
 
     return { 
-        'xform_relpath': relpath,
-        'itemsets_relpath': relpath_itemsets_csv, 
+        'xform_url':  None if not relpath else baseDownloadUrl + relpath,
+        'itemsets_url': None if not relpath_itemsets_csv else baseDownloadUrl + relpath_itemsets_csv, 
         'error': error,
         'warnings': warnings
     }
@@ -132,19 +132,13 @@ def index(request):
         form = UploadFileForm(request.POST, request.FILES)  # A form bound to the POST data
         if form.is_valid():  # All validation rules pass
 
-            conversion_result = convert_xlsform(request.FILES['file'], Persistence.NONE)
-            
-            xform_relpath = conversion_result.get('xform_relpath')
-            xform_url = None if not xform_relpath else request.build_absolute_uri('../downloads/' + xform_relpath)
-
-            itemsets_relpath = conversion_result.get('itemsets_relpath')
-            itemsets_url = None if not itemsets_relpath else request.build_absolute_uri('../downloads/' + itemsets_relpath)
+            conversion_result = convert_xlsform(request.FILES['file'], request.build_absolute_uri('./downloads/'), Persistence.NONE)
 
             return render(request, 'upload.html', {
                 'form': UploadFileForm(),
-                'xml_path': xform_url,
-                'xml_url': xform_url,
-                'itemsets_url': itemsets_url,
+                'xml_path': conversion_result.get('xform_url'),
+                'xml_url': conversion_result.get('xform_url'),
+                'itemsets_url': conversion_result.get('itemsets_url'),
                 'success': not conversion_result.get('error'),
                 'error': conversion_result.get('error'),
                 'warnings': conversion_result.get('warnings'),
@@ -184,13 +178,7 @@ def api_xlsform(request):
     except:
         persistence = Persistence.NONE
 
-    conversion_result = convert_xlsform(request.FILES['file'], persistence)
-
-    xform_relpath = conversion_result.pop('xform_relpath')
-    conversion_result['xform_url'] = None if not xform_relpath else request.build_absolute_uri('../downloads/' + xform_relpath)
-
-    itemsets_relpath = conversion_result.pop('itemsets_relpath')
-    conversion_result['itemsets_url'] = None if not itemsets_relpath else request.build_absolute_uri('../downloads/' + itemsets_relpath)
+    conversion_result = convert_xlsform(request.FILES['file'],request.build_absolute_uri('/downloads/'), persistence)
 
     response = JsonResponse(conversion_result)
     
