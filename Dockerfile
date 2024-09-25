@@ -2,7 +2,7 @@ FROM python:3.12.5-alpine
 
 RUN apk --update add openjdk8-jre-base git
 
-WORKDIR /usr/scr/app
+WORKDIR /usr/src/app
 
 COPY requirements.txt ./
 
