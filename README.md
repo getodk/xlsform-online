@@ -1,5 +1,5 @@
 # Overview
-XLSForm-online is a Django-based web application that uses pyxform to convert a XLSForm to an ODK XForm and shows the preview of the Form in Enketo Express.
+XLSForm Online is a Django-based web application that uses pyxform to convert a XLSForm to an ODK XForm and shows the preview of the Form in Enketo Express.
 
 # Run locally
 
@@ -11,7 +11,7 @@ XLSForm-online is a Django-based web application that uses pyxform to convert a 
 pip install --requirement requirements.txt
 export DJANGO_SECRET_KEY=<secret value>
 export DJANGO_TMP_HOME=<location for temporary Forms>
-export DJANGO_PERSISTENT_HOME=<location for permenent Forms>
+export DJANGO_PERSISTENT_HOME=<location for permanent Forms>
 python3 manage.py runserver
 ```
 
@@ -21,8 +21,8 @@ docker build --tag xlsform-online .
 docker run --detach --publish 5001:80 xlsform-online
 export DJANGO_SECRET_KEY=<secret value>
 export DJANGO_TMP_HOME=<location for temporary Forms>
-export DJANGO_PERSISTENT_HOME=<location for permenent Forms>
-ocker run -e DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY -v $DJANGO_TMP_HOME:/tmp_home -v $DJANGO_PERSISTENT_HOME:/persistent_home -p 8000:8000 xlsform-online
+export DJANGO_PERSISTENT_HOME=<location for permanent Forms>
+docker run -e DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY -v $DJANGO_TMP_HOME:/tmp_home -v $DJANGO_PERSISTENT_HOME:/persistent_home -p 8000:8000 xlsform-online
 ```
 
 # CORS
