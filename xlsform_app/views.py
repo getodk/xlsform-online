@@ -29,11 +29,9 @@ DJANGO_PERSISTENT_HOME = os.environ['DJANGO_PERSISTENT_HOME']
 class UploadFileForm(forms.Form):
     file = forms.FileField()
 
-class Persistence(Enum):
-    NONE = 'none'
-    ODK_ONLY = 'odk-only'
-    PUBLIC_ANONYMOUS = 'public-anonymous'
-    PUBLIC = 'public'
+class PreviewTarget(Enum):
+    WEB_FORMS = 'web-forms'
+    ENKETO = 'enketo'
 
 def clean_name(name):
 
@@ -45,25 +43,24 @@ def append_cors_headers(response):
     response["Access-Control-Allow-Origin"] = allowed_origin
     response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
 
-def handle_uploaded_file(f, temp_dir): 
+def handle_uploaded_file(file, directory): 
     
-    filename = clean_name(f.name)
+    filename = clean_name(file.name)
 
-    xls_path = os.path.join(temp_dir, filename)
-    destination = open(xls_path, 'wb+')
-    for chunk in f.chunks():
+    filepath = os.path.join(directory, filename)
+    destination = open(filepath, 'wb+')
+    for chunk in file.chunks():
         destination.write(chunk)
     destination.close()
-    return xls_path
+    return filepath
 
-def persist_file(persistence, dir_uuid, file_path):
-    persistence_dir = os.path.join(DJANGO_PERSISTENT_HOME, persistence.value, dir_uuid)
-    if not (os.access(persistence_dir, os.F_OK)):
-        os.makedirs(persistence_dir)
-    shutil.copy(file_path, persistence_dir)
+def copy_file(directory, file_path):
+    if not (os.access(directory, os.F_OK)):
+        os.makedirs(directory)
+    return shutil.copy(file_path, directory)
 
 
-def convert_xlsform(file, baseDownloadUrl, persistence=Persistence.NONE):
+def convert_xlsform(file, baseDownloadUrl, preview_target):
     error = None
     warnings = None
 
@@ -79,11 +76,18 @@ def convert_xlsform(file, baseDownloadUrl, persistence=Persistence.NONE):
     temp_dir = tempfile.mkdtemp(prefix=dir_uuid, dir=DJANGO_TMP_HOME)
     relpath_itemsets_csv = None
 
+    # Subdirectory i.e. 'web-form' / 'enketo' is inferred by the source  
+    # api_xlsform is called only by Web Form Preview and the view (upload.html) has only option to view Form in Enketo
+    permanent_dir = os.path.join(DJANGO_PERSISTENT_HOME, preview_target.value, dir_uuid)
+    if not (os.access(permanent_dir, os.F_OK)):
+        os.makedirs(permanent_dir)
+
     try:
         if ext == '.xml':
-            xml_path = handle_uploaded_file(file, temp_dir)
-            if(persistence != Persistence.NONE):
-                persist_file(persistence, dir_uuid, xml_path)
+            permanent_file_path = handle_uploaded_file(file, permanent_dir)
+
+            # We need to copy the file to temp_dir so that it can be served via `download()`
+            xml_path = copy_file(temp_dir, permanent_file_path)
             relpath = os.path.relpath(xml_path, DJANGO_TMP_HOME)
             warnings = odk_validate.check_xform(xml_path)
         else:
@@ -95,10 +99,7 @@ def convert_xlsform(file, baseDownloadUrl, persistence=Persistence.NONE):
             fo.close()
 
             #TODO: use the file object directly
-            xls_path = handle_uploaded_file(file, temp_dir)
-    
-            if(persistence != Persistence.NONE):
-                persist_file(persistence, dir_uuid, xls_path)
+            xls_path = handle_uploaded_file(file, permanent_dir)
 
             warnings = []
             json_survey = xls2json.parse_file_to_json(xls_path, warnings=warnings)
@@ -132,7 +133,7 @@ def index(request):
         form = UploadFileForm(request.POST, request.FILES)  # A form bound to the POST data
         if form.is_valid():  # All validation rules pass
 
-            conversion_result = convert_xlsform(request.FILES['file'], request.build_absolute_uri('./downloads/'), Persistence.NONE)
+            conversion_result = convert_xlsform(request.FILES['file'], request.build_absolute_uri('./downloads/'), PreviewTarget.ENKETO)
 
             return render(request, 'upload.html', {
                 'form': UploadFileForm(),
@@ -172,13 +173,7 @@ def api_xlsform(request):
     if request.method != 'POST':
         return HttpResponseBadRequest()
 
-    persist_flag = request.POST.get('persist')
-    try:
-        persistence = Persistence(persist_flag)
-    except:
-        persistence = Persistence.NONE
-
-    conversion_result = convert_xlsform(request.FILES['file'],request.build_absolute_uri('/downloads/'), persistence)
+    conversion_result = convert_xlsform(request.FILES['file'],request.build_absolute_uri('/downloads/'), PreviewTarget.WEB_FORMS)
 
     response = JsonResponse(conversion_result)
     
