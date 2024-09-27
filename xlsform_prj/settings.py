@@ -160,4 +160,4 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # SECURITY WARNING: don't run with CORS_ALLOWED_ORIGIN = * in production!
-CORS_ALLOWED_ORIGIN = ''
+CORS_ALLOWED_ORIGIN = os.getenv('DJANGO_CORS_ALLOWED_ORIGIN', '')
