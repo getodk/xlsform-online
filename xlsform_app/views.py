@@ -38,10 +38,14 @@ def clean_name(name):
     # name will be used in a URL and # and , aren't valid characters
     return re.sub("#|,","", name)
 
-def append_cors_headers(response):
+def append_cors_headers(request, response):
     allowed_origin = settings.CORS_ALLOWED_ORIGIN
-    response["Access-Control-Allow-Origin"] = allowed_origin
-    response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    if(allowed_origin):
+        origin_list = [item.strip() for item in allowed_origin.split(",")]
+        request_origin = request.META.get('HTTP_ORIGIN')
+        if(request_origin in origin_list):
+            response["Access-Control-Allow-Origin"] = request_origin
+            response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
 
 def handle_uploaded_file(file, directory): 
     
@@ -164,7 +168,7 @@ def serve_file(request, path):
         response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(os.path.normpath(path))
         response.write(data)
 
-        append_cors_headers(response)
+        append_cors_headers(request, response)
 
         return response
 
@@ -177,6 +181,6 @@ def api_xlsform(request):
 
     response = JsonResponse(conversion_result)
     
-    append_cors_headers(response)
+    append_cors_headers(request, response)
 
     return response
