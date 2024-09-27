@@ -108,7 +108,7 @@ def convert_xlsform(file, baseDownloadUrl, preview_target):
 
             if has_external_choices(json_survey):
                 # Create a csv for the external choices
-                itemsets_csv = os.path.join(os.path.split(xls_path)[0],
+                itemsets_csv = os.path.join(os.path.split(xml_path)[0],
                                             "itemsets.csv")
                 choices_exported = sheet_to_csv(xls_path, itemsets_csv,
                                                 "external_choices")
