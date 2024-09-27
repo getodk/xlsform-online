@@ -27,4 +27,4 @@ docker run -e DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY -v $DJANGO_TMP_HOME:/tmp_home
 
 # CORS
 
-If you want to call `api/xlsform` from another application, please set the `DJANGO_CORS_ALLOWED_ORIGIN` environemnt variable e.g. `https://www.example.com`.
+If you want to call `api/xlsform` from another application, please set the `DJANGO_CORS_ALLOWED_ORIGIN` environemnt variable, you can provide comma separated list for allowed origins e.g. `https://staging.enketo.getodk.org, http://localhost:5173`.
