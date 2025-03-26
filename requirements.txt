@@ -1,3 +1,3 @@
-Django==4.2.17
+Django==4.2.20
 pyxform@git+https://github.com/xlsform/pyxform@master
-gunicorn==22.0.0
+gunicorn==23.0.0
