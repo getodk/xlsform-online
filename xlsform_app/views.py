@@ -27,7 +27,7 @@ DJANGO_TMP_HOME = os.environ['DJANGO_TMP_HOME']
 DJANGO_PERSISTENT_HOME = os.environ['DJANGO_PERSISTENT_HOME']
 
 class UploadFileForm(forms.Form):
-    file = forms.FileField()
+    file = forms.FileField(attrs={ 'accept': '.xls, .xlsx' })
 
 class PreviewTarget(Enum):
     WEB_FORMS = 'web-forms'
